@@ -1,0 +1,428 @@
+<div class="page-content">
+
+  <!-- BANNER -->
+  <div class="page-banner org-banner">
+    <div class="container">
+      <h1><span class="material-icons">account_tree</span>Struktur Organisasi</h1>
+      <p>Susunan Pengurus POBSI Sulawesi Tengah — Masa Bakti {{ currentPeriod }}</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="view-toggle">
+        <button class="vtab" [class.active]="view==='chart'" (click)="view='chart'">
+          <span class="material-icons">account_tree</span> Bagan
+        </button>
+        <button class="vtab" [class.active]="view==='grid'" (click)="view='grid'">
+          <span class="material-icons">grid_view</span> Grid
+        </button>
+        <button class="vtab" [class.active]="view==='table'" (click)="view='table'">
+          <span class="material-icons">table_rows</span> Tabel
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <select class="form-control filter-select" [(ngModel)]="filterDivision">
+          <option value="">Semua Bidang</option>
+          @for (d of divisions; track d) {
+            <option [value]="d">{{ d }}</option>
+          }
+        </select>
+        <button class="btn btn-primary" (click)="openModal()">
+          <span class="material-icons">person_add</span> Tambah Pengurus
+        </button>
+      </div>
+    </div>
+
+    <!-- STATS PILLS -->
+    <div class="stats-bar">
+      <div class="stat-pill">
+        <span class="material-icons">groups</span>
+        Total: <strong>{{ members().length }}</strong> Pengurus
+      </div>
+      <div class="stat-pill green">
+        <span class="material-icons">check_circle</span>
+        Aktif: <strong>{{ activeCount }}</strong>
+      </div>
+      <div class="stat-pill purple">
+        <span class="material-icons">category</span>
+        Bidang: <strong>{{ divisions.length }}</strong>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Memuat struktur organisasi...</p>
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════
+         VIEW: BAGAN
+         ══════════════════════════════════════ -->
+    @if (!loading() && view === 'chart') {
+      <div class="chart-wrap">
+
+        @if (members().length === 0) {
+          <div class="empty-state">
+            <span class="material-icons">group_off</span>
+            <h3>Belum ada pengurus</h3>
+            <p>Tambahkan pengurus pertama lewat tombol di atas.</p>
+          </div>
+        }
+
+        <!-- Level 1 -->
+        @if (getLevel(1).length > 0) {
+          <div class="chart-level">
+            <div class="level-label">Pimpinan Utama</div>
+            <div class="chart-row justify-center">
+              @for (m of getLevel(1); track m.id) {
+                <div class="org-node node-l1" (click)="openModal(m)">
+                  <div class="node-avatar av-l1">{{ initials(m.name) }}</div>
+                  <div class="node-info">
+                    <div class="node-pos pos-l1">{{ m.position }}</div>
+                    <div class="node-name">{{ m.name }}</div>
+                    @if (m.phone) {
+                      <div class="node-sub">{{ m.phone }}</div>
+                    }
+                  </div>
+                  <span class="node-edit-icon material-icons">edit</span>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="chart-line"></div>
+        }
+
+        <!-- Level 2 -->
+        @if (getLevel(2).length > 0) {
+          <div class="chart-level">
+            <div class="level-label">Wakil &amp; Sekretariat</div>
+            <div class="chart-row justify-center">
+              @for (m of getLevel(2); track m.id) {
+                <div class="org-node node-l2" (click)="openModal(m)">
+                  <div class="node-avatar av-l2">{{ initials(m.name) }}</div>
+                  <div class="node-info">
+                    <div class="node-pos pos-l2">{{ m.position }}</div>
+                    <div class="node-name">{{ m.name }}</div>
+                    @if (m.phone) {
+                      <div class="node-sub">{{ m.phone }}</div>
+                    }
+                  </div>
+                  <span class="node-edit-icon material-icons">edit</span>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="chart-line"></div>
+        }
+
+        <!-- Level 3 & 4 per divisi -->
+        @if (divisionGroups.length > 0) {
+          <div class="chart-level">
+            <div class="level-label">Bidang-Bidang</div>
+            <div class="divisions-grid">
+              @for (div of divisionGroups; track div.name) {
+                <div class="division-col">
+                  <div class="division-header">
+                    <span class="material-icons">groups</span>
+                    {{ div.name }}
+                  </div>
+                  <div class="division-members">
+                    @for (m of div.members; track m.id) {
+                      <div class="org-node node-l3" (click)="openModal(m)">
+                        <div class="node-avatar av-l3">{{ initials(m.name) }}</div>
+                        <div class="node-info">
+                          <div class="node-pos pos-l3">{{ m.position }}</div>
+                          <div class="node-name">{{ m.name }}</div>
+                        </div>
+                        <span class="node-edit-icon material-icons">edit</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════
+         VIEW: GRID
+         ══════════════════════════════════════ -->
+    @if (!loading() && view === 'grid') {
+      <div class="org-grid">
+        @for (m of filteredMembers; track m.id) {
+          <div class="member-card" [class]="'lv-'+m.level">
+            <div class="mc-top" [class]="'mc-top-'+m.level">
+              <div class="mc-avatar" [class]="'mc-av-'+m.level">{{ initials(m.name) }}</div>
+              <span class="mc-level-tag" [class]="'mc-lt-'+m.level">L{{ m.level }}</span>
+            </div>
+            <div class="mc-body">
+              <div class="mc-position" [class]="'mc-pos-'+m.level">{{ m.position }}</div>
+              <div class="mc-name">{{ m.name }}</div>
+              <div class="mc-meta">
+                <div class="mc-meta-row">
+                  <span class="material-icons">groups</span>{{ m.division }}
+                </div>
+                @if (m.phone) {
+                  <div class="mc-meta-row">
+                    <span class="material-icons">phone</span>{{ m.phone }}
+                  </div>
+                }
+                @if (m.email) {
+                  <div class="mc-meta-row">
+                    <span class="material-icons">email</span>{{ m.email }}
+                  </div>
+                }
+                <div class="mc-meta-row">
+                  <span class="material-icons">event</span>{{ m.period }}
+                </div>
+              </div>
+              <div class="mc-footer">
+                <span class="badge" [class]="m.is_active ? 'badge-green' : 'badge-gray'">
+                  {{ m.is_active ? 'Aktif' : 'Non-aktif' }}
+                </span>
+                <div class="mc-actions">
+                  <button class="btn btn-sm btn-secondary btn-icon" (click)="openModal(m)" title="Edit">
+                    <span class="material-icons" style="font-size:15px">edit</span>
+                  </button>
+                  <button class="btn btn-sm btn-danger btn-icon" (click)="confirmDelete(m)" title="Hapus">
+                    <span class="material-icons" style="font-size:15px">delete</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+        @if (filteredMembers.length === 0) {
+          <div class="empty-state" style="grid-column:1/-1">
+            <span class="material-icons">group_off</span>
+            <h3>Tidak ada data</h3>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ══════════════════════════════════════
+         VIEW: TABEL
+         ══════════════════════════════════════ -->
+    @if (!loading() && view === 'table') {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nama</th>
+              <th>Jabatan</th>
+              <th>Bidang</th>
+              <th>Level</th>
+              <th>Periode</th>
+              <th>Kontak</th>
+              <th>Status</th>
+              <th style="text-align:center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of filteredMembers; track m.id; let i = $index) {
+              <tr>
+                <td style="color:var(--gray-2);font-size:13px">{{ i + 1 }}</td>
+                <td>
+                  <div class="tbl-name-cell">
+                    <div class="tbl-avatar" [class]="'tbl-av-'+m.level">{{ initials(m.name) }}</div>
+                    <strong>{{ m.name }}</strong>
+                  </div>
+                </td>
+                <td>{{ m.position }}</td>
+                <td><span class="badge badge-blue">{{ m.division }}</span></td>
+                <td><span class="lvl-chip" [class]="'lc-'+m.level">Level {{ m.level }}</span></td>
+                <td>{{ m.period }}</td>
+                <td class="contact-cell">
+                  @if (m.phone) { <div>📞 {{ m.phone }}</div> }
+                  @if (m.email) { <div>✉ {{ m.email }}</div> }
+                  @if (!m.phone && !m.email) { <span style="color:var(--gray-2)">—</span> }
+                </td>
+                <td>
+                  <span class="badge" [class]="m.is_active ? 'badge-green' : 'badge-gray'">
+                    {{ m.is_active ? 'Aktif' : 'Non-aktif' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-btns" style="justify-content:center">
+                    <button class="btn btn-sm btn-secondary btn-icon" (click)="openModal(m)">
+                      <span class="material-icons" style="font-size:15px">edit</span>
+                    </button>
+                    <button class="btn btn-sm btn-danger btn-icon" (click)="confirmDelete(m)">
+                      <span class="material-icons" style="font-size:15px">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (filteredMembers.length === 0) {
+        <div class="empty-state">
+          <span class="material-icons">group_off</span>
+          <h3>Belum ada pengurus</h3>
+        </div>
+      }
+    }
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL TAMBAH / EDIT
+     ══════════════════════════════════════════════ -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">{{ editingId ? 'Edit Pengurus' : 'Tambah Pengurus Baru' }}</h3>
+          <p class="modal-subtitle">Data pengurus POBSI Sulawesi Tengah</p>
+        </div>
+        <button class="modal-close" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Live preview inisial -->
+        <div class="form-preview">
+          <div class="preview-avatar" [class]="'pav-l'+form.level">
+            {{ form.name ? initials(form.name) : '?' }}
+          </div>
+          <div class="preview-text">
+            <div class="preview-name">{{ form.name || 'Nama Pengurus' }}</div>
+            <div class="preview-meta">{{ form.position || 'Jabatan' }} · {{ form.division || 'Bidang' }}</div>
+            <div class="preview-period">{{ form.period || 'Periode' }}</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap *</label>
+            <input class="form-control" [(ngModel)]="form.name" placeholder="Nama lengkap pengurus" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jabatan *</label>
+            <input class="form-control" [(ngModel)]="form.position"
+              placeholder="Ketua Umum, Sekretaris…" list="positionList" />
+            <datalist id="positionList">
+              <option value="Ketua Umum"></option>
+              <option value="Wakil Ketua Umum"></option>
+              <option value="Sekretaris Umum"></option>
+              <option value="Wakil Sekretaris"></option>
+              <option value="Bendahara Umum"></option>
+              <option value="Wakil Bendahara"></option>
+              <option value="Ketua Bidang"></option>
+              <option value="Wakil Ketua Bidang"></option>
+              <option value="Anggota"></option>
+            </datalist>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Bidang / Divisi *</label>
+            <input class="form-control" [(ngModel)]="form.division"
+              placeholder="Pimpinan, Bidang Pembinaan…" list="divList" />
+            <datalist id="divList">
+              <option value="Pimpinan"></option>
+              <option value="Bidang Pembinaan &amp; Prestasi"></option>
+              <option value="Bidang Organisasi"></option>
+              <option value="Bidang Keuangan"></option>
+              <option value="Bidang Humas &amp; Publikasi"></option>
+              <option value="Bidang Kompetisi"></option>
+              <option value="Bidang Pemberdayaan"></option>
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Level Hierarki *</label>
+            <select class="form-control" [(ngModel)]="form.level">
+              <option [value]="1">Level 1 — Ketua Umum</option>
+              <option [value]="2">Level 2 — Wakil / Sekretaris / Bendahara</option>
+              <option [value]="3">Level 3 — Kepala Bidang</option>
+              <option [value]="4">Level 4 — Anggota Bidang</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Masa Bakti *</label>
+            <input class="form-control" [(ngModel)]="form.period" placeholder="Cth: 2023–2027" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Urutan Tampil</label>
+            <input class="form-control" type="number" [(ngModel)]="form.sort_order" min="1" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">No. Telepon</label>
+            <input class="form-control" [(ngModel)]="form.phone" placeholder="08xx-xxxx-xxxx" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" [(ngModel)]="form.email" placeholder="nama@email.com" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="toggle-label">
+            <input type="checkbox" [(ngModel)]="form.is_active"
+              style="width:auto;margin-right:8px;accent-color:var(--red)" />
+            Pengurus aktif menjabat
+            <span class="toggle-hint">
+              {{ form.is_active ? '(ditampilkan di bagan)' : '(disembunyikan dari bagan)' }}
+            </span>
+          </label>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()" [disabled]="saving()">Batal</button>
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="material-icons spin">autorenew</span> Menyimpan...
+          } @else {
+            <span class="material-icons">save</span>
+            {{ editingId ? 'Simpan Perubahan' : 'Tambah Pengurus' }}
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- KONFIRMASI HAPUS -->
+@if (showDeleteConfirm()) {
+  <div class="modal-overlay" (click)="showDeleteConfirm.set(false)">
+    <div class="modal-box confirm-box" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><span class="material-icons">warning</span></div>
+      <h3>Hapus Pengurus?</h3>
+      <p>
+        Data <strong>{{ deletingMember?.name }}</strong>
+        sebagai <em>{{ deletingMember?.position }}</em> akan dihapus permanen.
+      </p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary" (click)="showDeleteConfirm.set(false)">Batal</button>
+        <button class="btn btn-danger" (click)="deleteMember()" [disabled]="saving()">
+          {{ saving() ? 'Menghapus...' : 'Ya, Hapus' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

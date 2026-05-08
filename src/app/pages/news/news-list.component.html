@@ -1,0 +1,267 @@
+<div class="page-content">
+
+  <!-- BANNER -->
+  <div class="page-banner">
+    <div class="container">
+      <h1><span class="material-icons">article</span>Berita &amp; Informasi</h1>
+      <p>Berita terkini seputar POBSI Sulawesi Tengah</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="material-icons">search</span>
+        <input type="text" placeholder="Cari berita..." [(ngModel)]="searchQuery" />
+      </div>
+      <div class="toolbar-right">
+        <select class="form-control filter-select" [(ngModel)]="filterCategory">
+          <option value="">Semua Kategori</option>
+          <option value="Umum">Umum</option>
+          <option value="Kejuaraan">Kejuaraan</option>
+          <option value="Atlet">Atlet</option>
+          <option value="Pengumuman">Pengumuman</option>
+          <option value="Prestasi">Prestasi</option>
+        </select>
+        <button class="btn btn-primary" (click)="openModal()">
+          <span class="material-icons">add</span> Tulis Berita
+        </button>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Memuat berita...</p>
+      </div>
+    }
+
+    <!-- FEATURED (berita pertama) -->
+    @if (!loading() && featuredNews) {
+      <div class="featured-wrap">
+        <div class="featured-card">
+          <div class="featured-img-side">
+            @if (featuredNews.photo_url) {
+              <img [src]="featuredNews.photo_url" [alt]="featuredNews.title" />
+            } @else {
+              <div class="featured-img-placeholder">
+                <span class="material-icons">article</span>
+              </div>
+            }
+            <div class="featured-badges">
+              <span class="badge badge-yellow-solid">{{ featuredNews.category }}</span>
+              @if (!featuredNews.published) {
+                <span class="badge badge-dark">Draft</span>
+              }
+            </div>
+          </div>
+
+          <div class="featured-content">
+            <div class="featured-eyebrow">Berita Utama</div>
+            <div class="news-meta">
+              <span class="material-icons">person</span> {{ featuredNews.author }}
+              <span class="sep">·</span>
+              <span class="material-icons">schedule</span> {{ formatDate(featuredNews.created_at!) }}
+            </div>
+            <h2 class="featured-title">{{ featuredNews.title }}</h2>
+            <p class="featured-summary">{{ featuredNews.summary }}</p>
+            <div class="featured-actions">
+              <a [routerLink]="['/berita', featuredNews.id]" class="btn btn-primary">
+                <span class="material-icons">open_in_new</span> Baca Selengkapnya
+              </a>
+              <button class="btn btn-secondary btn-icon" (click)="openModal(featuredNews)" title="Edit">
+                <span class="material-icons">edit</span>
+              </button>
+              <button class="btn btn-danger btn-icon" (click)="confirmDelete(featuredNews)" title="Hapus">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- BERITA LAINNYA -->
+    @if (!loading() && otherNews.length > 0) {
+      <div class="section-divider">
+        <span>Berita Lainnya</span>
+      </div>
+      <div class="news-grid">
+        @for (news of otherNews; track news.id) {
+          <div class="news-card" [class.unpublished]="!news.published">
+            <div class="news-card-img">
+              @if (news.photo_url) {
+                <img [src]="news.photo_url" [alt]="news.title" />
+              } @else {
+                <div class="news-img-empty">
+                  <span class="material-icons">article</span>
+                </div>
+              }
+              <div class="news-card-badges">
+                <span class="ncard-badge">{{ news.category }}</span>
+                @if (!news.published) {
+                  <span class="ncard-badge draft">Draft</span>
+                }
+              </div>
+            </div>
+            <div class="news-card-body">
+              <div class="news-card-meta">
+                <span>{{ formatDate(news.created_at!) }}</span>
+                <span>{{ news.author }}</span>
+              </div>
+              <h4 class="news-card-title">{{ news.title }}</h4>
+              <p class="news-card-summary">{{ news.summary }}</p>
+              <div class="news-card-actions">
+                <a [routerLink]="['/berita', news.id]" class="btn btn-sm btn-primary">
+                  <span class="material-icons" style="font-size:14px">open_in_new</span> Baca
+                </a>
+                <button class="btn btn-sm btn-icon"
+                  [class]="news.published ? 'btn-secondary' : 'btn-success'"
+                  (click)="togglePublish(news)"
+                  [title]="news.published ? 'Jadikan Draft' : 'Publikasikan'">
+                  <span class="material-icons" style="font-size:14px">
+                    {{ news.published ? 'visibility_off' : 'publish' }}
+                  </span>
+                </button>
+                <button class="btn btn-sm btn-secondary btn-icon" (click)="openModal(news)" title="Edit">
+                  <span class="material-icons" style="font-size:14px">edit</span>
+                </button>
+                <button class="btn btn-sm btn-danger btn-icon" (click)="confirmDelete(news)" title="Hapus">
+                  <span class="material-icons" style="font-size:14px">delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- EMPTY -->
+    @if (!loading() && filteredNews.length === 0) {
+      <div class="empty-state">
+        <span class="material-icons">newspaper</span>
+        <h3>Belum Ada Berita</h3>
+        <p>Mulai tulis berita pertama untuk POBSI Sulawesi Tengah.</p>
+      </div>
+    }
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL TAMBAH / EDIT
+     ══════════════════════════════════════════════ -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ editingId ? 'Edit Berita' : 'Tulis Berita Baru' }}</h3>
+        <button class="modal-close" (click)="closeModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Upload foto -->
+        <div class="form-group">
+          <label class="form-label">Foto Berita</label>
+          @if (photoPreview) {
+            <div class="news-photo-preview">
+              <img [src]="photoPreview" alt="Preview" />
+              <button class="remove-news-photo" (click)="removePhoto()">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          } @else {
+            <label class="image-upload-area" for="newsPhoto" style="cursor:pointer">
+              <span class="material-icons">add_photo_alternate</span>
+              <span>Klik untuk upload foto berita</span>
+              <span style="font-size:12px;color:#aaa">JPG, PNG, WEBP — Maks 5MB</span>
+            </label>
+          }
+          <input type="file" id="newsPhoto" accept="image/*"
+            (change)="onPhotoChange($event)" style="display:none" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Judul Berita *</label>
+          <input class="form-control" [(ngModel)]="form.title"
+            placeholder="Judul berita yang menarik..." />
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Kategori *</label>
+            <select class="form-control" [(ngModel)]="form.category">
+              <option value="Umum">Umum</option>
+              <option value="Kejuaraan">Kejuaraan</option>
+              <option value="Atlet">Atlet</option>
+              <option value="Pengumuman">Pengumuman</option>
+              <option value="Prestasi">Prestasi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Penulis *</label>
+            <input class="form-control" [(ngModel)]="form.author"
+              placeholder="Nama penulis" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ringkasan *</label>
+          <textarea class="form-control" [(ngModel)]="form.summary" rows="2"
+            placeholder="Ringkasan singkat (tampil di daftar berita)..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Isi Berita *</label>
+          <textarea class="form-control" [(ngModel)]="form.content" rows="8"
+            placeholder="Tulis isi berita lengkap di sini..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="toggle-label">
+            <input type="checkbox" [(ngModel)]="form.published"
+              style="width:auto;margin-right:8px;accent-color:var(--red)" />
+            Publikasikan sekarang
+            <span class="toggle-hint">
+              {{ form.published ? '(Berita akan terlihat publik)' : '(Tersimpan sebagai draft)' }}
+            </span>
+          </label>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()" [disabled]="saving()">Batal</button>
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="material-icons spin">autorenew</span> Menyimpan...
+          } @else {
+            <span class="material-icons">save</span>
+            {{ editingId ? 'Simpan Perubahan' : 'Publikasikan' }}
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- KONFIRMASI HAPUS -->
+@if (showDeleteConfirm()) {
+  <div class="modal-overlay" (click)="showDeleteConfirm.set(false)">
+    <div class="modal-box confirm-box" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><span class="material-icons">warning</span></div>
+      <h3>Hapus Berita?</h3>
+      <p>Berita <strong>{{ deletingItem?.title }}</strong> akan dihapus permanen.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary" (click)="showDeleteConfirm.set(false)">Batal</button>
+        <button class="btn btn-danger" (click)="deleteItem()" [disabled]="saving()">
+          {{ saving() ? 'Menghapus...' : 'Ya, Hapus' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

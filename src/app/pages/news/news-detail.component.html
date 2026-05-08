@@ -1,0 +1,95 @@
+<div class="page-content">
+
+  @if (loading()) {
+    <div class="loading-state" style="margin-top:80px">
+      <div class="spinner"></div>
+      <p>Memuat berita...</p>
+    </div>
+  }
+
+  @if (!loading() && news()) {
+    <div class="news-hero">
+      @if (news()!.photo_url) {
+        <img [src]="news()!.photo_url" [alt]="news()!.title" class="hero-img" />
+        <div class="hero-gradient"></div>
+      } @else {
+        <div class="hero-no-img">
+          <span class="material-icons">article</span>
+        </div>
+      }
+    </div>
+
+    <div class="container">
+      <a routerLink="/berita" class="back-btn">
+        <span class="material-icons">arrow_back</span> Kembali ke Berita
+      </a>
+
+      <article class="article">
+        <div class="article-meta">
+          <span class="badge badge-red">{{ news()!.category }}</span>
+          @if (!news()!.published) {
+            <span class="badge badge-gray">Draft</span>
+          }
+        </div>
+
+        <h1 class="article-title">{{ news()!.title }}</h1>
+
+        <div class="article-info">
+          <div class="info-item">
+            <span class="material-icons">person</span>
+            <span>{{ news()!.author }}</span>
+          </div>
+          <span class="info-sep">·</span>
+          <div class="info-item">
+            <span class="material-icons">calendar_today</span>
+            <span>{{ formatDate(news()!.created_at!) }}</span>
+          </div>
+        </div>
+
+        <p class="article-summary">{{ news()!.summary }}</p>
+
+        <div class="article-divider">
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="article-content">
+          @for (paragraph of paragraphs; track $index) {
+            <p>{{ paragraph }}</p>
+          }
+        </div>
+
+        <div class="article-footer">
+          <div class="share-label">Bagikan:</div>
+          <div class="share-btns">
+            <button class="share-btn whatsapp" (click)="shareWhatsapp()">
+              <span class="material-icons">share</span> WhatsApp
+            </button>
+            <button class="share-btn copy" (click)="copyLink()">
+              <span class="material-icons">link</span> Salin Link
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <div class="back-bottom">
+        <a routerLink="/berita" class="btn btn-secondary">
+          <span class="material-icons">arrow_back</span> Kembali ke Daftar Berita
+        </a>
+      </div>
+    </div>
+  }
+
+  @if (!loading() && !news()) {
+    <div class="container">
+      <div class="empty-state" style="margin-top:60px">
+        <span class="material-icons">article</span>
+        <h3>Berita Tidak Ditemukan</h3>
+        <p>Berita yang Anda cari tidak ada atau telah dihapus.</p>
+        <a routerLink="/berita" class="btn btn-primary" style="margin-top:16px">
+          Kembali ke Berita
+        </a>
+      </div>
+    </div>
+  }
+
+</div>
